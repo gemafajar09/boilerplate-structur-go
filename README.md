@@ -1,33 +1,28 @@
-# 🚀 Go Project Generator
+# 🚀 Go Project Boilerplate Generator
 
-Script ini akan membuat struktur boilerplate proyek Golang menggunakan pendekatan **Clean Architecture**.
-
----
-
-## 📂 Fitur Utama
-
-- ✅ Struktur modular dan scalable (Clean Architecture)
-- 🔌 Koneksi ke PostgreSQL
-- 🌍 Middleware CORS
-- ⚙️ Konfigurasi berbasis `.env`
-- 📦 Siap untuk dikembangkan dengan dependency injection, GORM, dll
+Script Python ini secara otomatis membuat struktur project Golang dengan pendekatan Clean Architecture.
 
 ---
 
-## 🧱 Struktur Project yang Dibuat
+## 📁 Struktur Folder
 
 ```bash
 go-project/
-├── cmd/server/main.go            # Entry point aplikasi
+├── cmd/server/main.go
 ├── internal/
-│   ├── config/config.go          # Load konfigurasi dari .env
-│   ├── db/postgres.go            # Koneksi ke PostgreSQL
-│   └── delivery/http/
-│       ├── handler.go            # Health check endpoint
-│       ├── middleware.go         # Middleware CORS
-│       └── router.go             # Routing setup
-├── .env                          # File konfigurasi environment
-├── Makefile                      # Shortcut untuk build/run/test
+│   ├── config/config.go
+│   ├── delivery/http/
+│   │   ├── handler.go
+│   │   └── router.go
+│   ├── domain/user.go
+│   ├── usecase/user_usecase.go
+│   └── repository/user_repository.go
+├── scripts/migrate.sh
+├── migrations/
+├── api/
+├── docs/
+├── Makefile
+
 ```
 ## ⚙️ Cara Menggunakan
 
