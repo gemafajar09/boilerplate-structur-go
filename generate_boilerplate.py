@@ -17,8 +17,8 @@ main_go = '''package main
 
 import (
     "log"
-    "go-expert/internal/config"
-    "go-expert/internal/delivery/http"
+    "go-project/internal/config"
+    "go-project/internal/delivery/http"
 )
 
 func main() {
@@ -44,7 +44,7 @@ router_go = '''package http
 
 import (
     "github.com/gin-gonic/gin"
-    "go-expert/internal/config"
+    "go-project/internal/config"
 )
 
 func NewRouter(cfg config.Config) *gin.Engine {
