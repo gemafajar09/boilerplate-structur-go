@@ -73,8 +73,12 @@ func NewRouter(cfg config.Config) *gin.Engine {
 config_go = '''package config
 
 import (
+    "github.com/joho/godotenv"
     "github.com/spf13/viper"
+    "log"
 )
+
+
 
 type Config struct {
     ServerPort string
@@ -86,6 +90,11 @@ type Config struct {
 }
 
 func LoadConfig() Config {
+    err := godotenv.Load()
+    if err != nil {
+        log.Println(".env file not found, using system env vars")
+    }
+    
     viper.SetDefault("SERVER_PORT", ":8080")
     viper.SetDefault("DB_USER", "root")
     viper.SetDefault("DB_PASSWORD", "")
@@ -127,6 +136,15 @@ func NewMySQLConnection(user, password, host, dbname string, port int) (*gorm.DB
 }
 '''
 
+env = '''
+SERVER_PORT=
+DB_USER=root
+DB_PASSWORD=
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=mydb
+'''
+
 taskfile_yaml = '''version: '3'
 
 tasks:
@@ -139,6 +157,7 @@ tasks:
   deps:
     desc: "Download required dependencies"
     cmds:
+      - go get github.com/joho/godotenv
       - go get github.com/spf13/viper
       - go get gorm.io/gorm
       - go get gorm.io/driver/mysql
@@ -197,5 +216,9 @@ for folder, files in structure.items():
 # Buat Taskfile.yml
 with open("Taskfile.yml", "w") as f:
     f.write(taskfile_yaml)
+
+# Buat file .env
+with open(".env", "w") as f:
+    f.write(env)
 
 print("✅ Boilerplate Go dengan koneksi MySQL dan Taskfile berhasil dibuat!")
