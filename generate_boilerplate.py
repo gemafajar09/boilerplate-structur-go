@@ -2,12 +2,12 @@ import os
 
 structure = {
     "cmd/server": ["main.go"],
-    "internal/config": ["config.go"],
-    "internal/delivery/http": ["handler.go", "router.go"],
     "internal/domain": ["user.go"],
-    "internal/db/mysql": ["connection.go"],
     "internal/usecase": ["user_usecase.go"],
     "internal/repository": ["user_repository.go"],
+    "internal/delivery/http": ["handler.go", "router.go"],
+    "internal/config": ["config.go"],
+    "internal/db/mysql": ["connection.go"],
     "scripts": ["migrate.sh"],
     "migrations": [],
     "api": [],
@@ -34,8 +34,10 @@ func main() {
         cfg.DBPort,
     )
     if err != nil {
-        log.Fatalf("Gagal terhubung ke DB: %v", err)
+        log.Fatalf("Failed to connect to DB: %v", err)
     }
+
+    // Optional: pass db to handlers/repositories here
 
     r := http.NewRouter(cfg)
     log.Fatal(r.Run(cfg.ServerPort))
@@ -129,9 +131,9 @@ taskfile_yaml = '''version: '3'
 
 tasks:
   gomod:
-    desc: "Initialize dan tidy Go modules"
+    desc: "Initialize and tidy Go modules"
     cmds:
-      - go mod init go-project || echo "module sudah diinisialisasi"
+      - go mod init go-project || echo "module already initialized"
       - go mod tidy
 
   deps:
@@ -162,7 +164,7 @@ tasks:
   migrate-up:
     desc: "Run goose migrations"
     cmds:
-      - goose -dir migrations mysql "user=root password=yourpassword dbname=yourdb sslmode=disable" up
+      - goose -dir migrations mysql "user=root password= dbname=go_portofolio sslmode=disable" up
 
   swag:
     desc: "Generate Swagger docs"
@@ -183,9 +185,14 @@ for folder, files in structure.items():
     os.makedirs(folder, exist_ok=True)
     for file in files:
         filepath = os.path.join(folder, file)
-        content = files_content.get(filepath, "")
-        with open(filepath, "w") as f:
-            f.write(content)
+        filepath_key = f"{folder}/{file}"
+        content = files_content.get(filepath_key, "")
+        if content:
+            with open(filepath, "w") as f:
+                f.write(content)
+        else:
+            open(filepath, "w").close()
+
 
 # Buat Taskfile.yml
 with open("Taskfile.yml", "w") as f:
