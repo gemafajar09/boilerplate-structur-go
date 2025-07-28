@@ -14,6 +14,7 @@ go-project/
 │   ├── delivery/http/
 │   │   ├── handler.go
 │   │   └── router.go
+│   ├── db/mysql/connection.go
 │   ├── domain/user.go
 │   ├── usecase/user_usecase.go
 │   └── repository/user_repository.go
@@ -21,7 +22,7 @@ go-project/
 ├── migrations/
 ├── api/
 ├── docs/
-├── Makefile
+├── Taskfile
 
 ```
 ## ⚙️ Cara Menggunakan
@@ -33,35 +34,16 @@ python generate_boilerplate.py
 
 Script ini akan membuat struktur folder dan file di direktori saat ini.
 
-**Buat File .env**
-Buat file .env di root folder:
-```env
-SERVER_PORT=:8080
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=goexpert
-```
 
-**Install Dependency Go**
+**Jalankan Task**
 ```bash
-go mod tidy
-go get github.com/gin-gonic/gin
-go get github.com/spf13/viper
-go get github.com/joho/godotenv
-go get github.com/lib/pq
+task tasks
 ```
 
-**Jalankan Aplikasi**
+Setelah task selesai baru jalanakn project sperti biasa:
+
 ```bash
 go run cmd/server/main.go
-```
-
-Atau jika ingin menggunakan Makefile:
-
-```bash
-make run
 ```
 
 **Tambahan**
