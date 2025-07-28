@@ -64,6 +64,25 @@ Setelah task selesai baru jalanakn project sperti biasa:
 go run cmd/server/main.go
 ```
 
+**Global System Flow Diagram**
+
+![Flow Diagram](flow.drawio.svg)
+
+**Struktur Modular**
+```
+internal/
+│
+├── config/         <- Load env dan konfigurasi
+├── db/mysql/       <- Koneksi dan migrasi DB
+├── auth/           <- Hash password dan JWT
+├── delivery/http/  <- Router, handler, response
+├── middleware/     <- Logger, JWT, CORS
+├── domain/         <- Struktur model (User)
+├── repository/     <- DB operation (GORM)
+├── usecase/        <- Logika bisnis
+
+```
+
 **Tambahan**
 ```
 Unutk nama project bisa disesuaikan. silahkan ganti go-project pada file boilerplate dengan nama project sendiri

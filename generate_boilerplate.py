@@ -197,26 +197,45 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Dependencies struct {
+	Logger      *zap.Logger
+	UserUsecase *usecase.UserUsecase
+	// tambah usecase lain disini nanti
+}
+
+func initDeps(db *gorm.DB) (*Dependencies, error) {
+	cfgzap := zap.NewProductionConfig()
+	cfgzap.OutputPaths = []string{"app.log", "stdout"}
+	logger, err := cfgzap.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	// Setup repository dan usecase
+	userRepo := repository.NewUserRepository(db)
+	userUsecase := usecase.NewUserUsecase(userRepo)
+
+	return &Dependencies{
+		Logger:      logger,
+		UserUsecase: userUsecase,
+	}, nil
+}
+
 func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
 	// Setup CORS
 	r.Use(middleware.CORSMiddleware())
 
-	// setup zap
-	cfgzap := zap.NewProductionConfig()
-	cfgzap.OutputPaths = []string{"app.log", "stdout"}
-	logger, err := cfgzap.Build()
+	deps, err := initDeps(db)
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
-	r.Use(middleware.LoggerMiddleware(logger))
+	defer deps.Logger.Sync()
 
-	// Setup repository dan usecase
-	userRepo := repository.NewUserRepository(db)
-	userUsecase := usecase.NewUserUsecase(userRepo)
-	authHandler := handler.NewAuthHandler(userUsecase)
+	r.Use(middleware.LoggerMiddleware(deps.Logger))
+
+	authHandler := handler.NewAuthHandler(deps.UserUsecase)
 
 	// Public routes
 	r.GET("/health", handler.GetHealth)
@@ -232,9 +251,8 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 	apiGroup := r.Group("/api")
 	apiGroup.Use(middleware.JWTAuthMiddleware(cfg.JWT)) // pakai JWT middleware
 	{
-		// contoh endpoint yang butuh autentikasi
 		apiGroup.GET("/profile", func(c *gin.Context) {
-			userID := c.GetString("userID") // ambil dari context
+			userID := c.GetString("userID")
 			c.JSON(200, gin.H{"userID": userID})
 		})
 	}
@@ -480,50 +498,44 @@ func GenerateToken(userID uint, email string, role string) (string, error) {
 middleware_auth_go = '''package middleware
 
 import (
+	"go-project/internal/auth"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/spf13/viper"
 )
 
 func JWTAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		jwtKey := []byte(viper.GetString("JWT_SECRET"))
+		// Ambil token dari header
+		tokenString := c.GetHeader("Authorization")
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is required"})
+			c.Abort()
 			return
 		}
 
-		// Format Bearer <token>
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
-			return
-		}
+		// Hilangkan "Bearer " jika ada
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		tokenString := parts[1]
+		claims := &auth.CustomClaims{}
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Validate signing method
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrTokenMalformed
-			}
-			return []byte(jwtSecret), nil
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
 		})
 
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
 			return
 		}
 
-		// Optional: Simpan claim/user info ke context
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if ok {
-			c.Set("userID", claims["id"])
-			c.Set("email", claims["email"])
-			c.Set("role", claims["role"])
-		}
+		c.Set("user_id", claims.UserID)
+		c.Set("email", claims.Email)
+		c.Set("role", claims.Role)
 
 		c.Next()
 	}
