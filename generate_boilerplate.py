@@ -186,10 +186,12 @@ router_go = '''package http
 
 import (
 	"go-project/internal/config"
+	"go-project/internal/delivery/http/handler"
 	"go-project/internal/delivery/middleware"
 	"go-project/internal/repository"
 	"go-project/internal/usecase"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
@@ -201,13 +203,23 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 	// Setup CORS
 	r.Use(middleware.CORSMiddleware())
 
+	// setup zap
+	cfgzap := zap.NewProductionConfig()
+	cfgzap.OutputPaths = []string{"app.log", "stdout"}
+	logger, err := cfgzap.Build()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+	r.Use(middleware.LoggerMiddleware(logger))
+
 	// Setup repository dan usecase
 	userRepo := repository.NewUserRepository(db)
 	userUsecase := usecase.NewUserUsecase(userRepo)
-	authHandler := NewAuthHandler(userUsecase)
+	authHandler := handler.NewAuthHandler(userUsecase)
 
 	// Public routes
-	r.GET("/health", GetHealth)
+	r.GET("/health", handler.GetHealth)
 
 	// Auth routes group
 	authGroup := r.Group("/auth")
